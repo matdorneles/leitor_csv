@@ -1,0 +1,33 @@
+form {
+    margin: 1rem;
+}
+
+b {
+    display: flex;
+    font-weight: normal;
+    color: #8e8f91;
+    margin-top: 0.5rem;
+}
+
+.upload {
+    border: 1px solid #000000;
+    display: flex;
+    font-size: 1.1rem;
+    width: 600px;
+}
+
+.upload-botao {
+    background: #0e28ef;
+    border: none;
+    border-radius: 5px;
+    color: #fdfdfd;
+    display: flex;
+    padding: 0.5rem;
+    margin-top: 1rem;
+    transition: all .1s ease-in-out;
+}
+
+.upload-botao:hover {
+    background: #0d1e9c;
+    cursor: pointer;
+}
