@@ -11,8 +11,6 @@ func SetupRoutes() {
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
 	//página inicial
 	http.HandleFunc("/", controllers.Index)
-	//ao clicar enviar, direcionará para este endpoint
-	http.HandleFunc("/upload", controllers.LerArquivo)
 	//comando para iniciar servidor
 	http.ListenAndServe(":8000", nil)
 }
