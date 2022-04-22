@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/matdorneles/leitor_csv/database"
 	"github.com/matdorneles/leitor_csv/models"
 )
 
@@ -62,6 +63,7 @@ func UploadArquivo(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// Lendo arquivo, separando linhas e virgulas e adicionando a cada atributo da classe Transacao
 func LerArquivo(arquivo string) {
 	arquivoCsv, err := os.Open(arquivo)
 	if err != nil {
@@ -69,6 +71,7 @@ func LerArquivo(arquivo string) {
 		return
 	}
 	defer arquivoCsv.Close()
+	defer os.Remove(arquivo)
 
 	leitor := csv.NewReader(arquivoCsv)
 	var transacoes []models.Transacao
@@ -95,4 +98,6 @@ func LerArquivo(arquivo string) {
 
 	transacaoJson, _ := json.Marshal(transacoes)
 	fmt.Println(string(transacaoJson))
+
+	database.DB.Create(&transacoes)
 }
