@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -39,8 +40,17 @@ func UploadArquivo(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 		return
 	}
-
 	defer file.Close()
+
+	// Verificando se o arquivo não está vazio, um CSV vazio possui 2 bytes
+	var verificarSize bytes.Buffer
+	tamanhoArquivo, err := verificarSize.ReadFrom(file)
+	tamanhoArquivoConv := float64(tamanhoArquivo)
+	if err != nil || tamanhoArquivoConv <= 2 {
+		http.Error(w, "O arquivo está vazio ou é menor/igual a 2 bytes", http.StatusBadRequest)
+		return
+	}
+
 	fmt.Printf("Arquivo enviado: %+v\n", handler.Filename)
 	fmt.Printf("Tamanho do arquivo: %+v\n", handler.Size)
 	fmt.Printf("Header: %+v\n", handler.Header)
@@ -71,7 +81,6 @@ func LerArquivo(arquivo string) {
 		return
 	}
 	defer arquivoCsv.Close()
-	defer os.Remove(arquivo)
 
 	leitor := csv.NewReader(arquivoCsv)
 	var transacoes []models.Transacao
