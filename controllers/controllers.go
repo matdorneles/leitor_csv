@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"time"
 
 	"github.com/matdorneles/leitor_csv/database"
@@ -39,10 +39,10 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//lê o arquivo CSV e o retorna em linhas JSON
 func UploadArquivo(w http.ResponseWriter, r *http.Request) {
 
-	//lê o arquivo CSV e o retorna em linhas JSON
-	r.ParseMultipartForm(10 << 20) // recebe arquivo enviado do HTML, tamanho máximo do arquivo = 10mb
+	r.ParseMultipartForm(10 << 20) // Tamanho máximo do arquivo = 10mb
 
 	// Handler para nome do arquivo, tamanho, header
 	file, handler, err := r.FormFile("arquivo")
@@ -53,35 +53,34 @@ func UploadArquivo(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Verificando se o arquivo não está vazio, um CSV vazio possui ~2 bytes
-	var verificarSize bytes.Buffer
-	tamanhoArquivo, err := verificarSize.ReadFrom(file)
-	tamanhoArquivoConv := float64(tamanhoArquivo)
-	if err != nil || tamanhoArquivoConv <= 2 {
-		http.Error(w, "O arquivo está vazio ou é menor/igual a 2 bytes", http.StatusBadRequest)
-		return
-	}
+	filename := path.Base(handler.Filename)
 
 	fmt.Printf("Arquivo enviado: %+v\n", handler.Filename)
 	fmt.Printf("Tamanho do arquivo: %+v\n", handler.Size)
 	fmt.Printf("Header: %+v\n", handler.Header)
 
 	// Criando arquivo
-	fileCsv, err := os.Create(handler.Filename)
+	csv, err := os.Create(filename)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+	defer csv.Close()
 
 	// Copiando arquivo do upload para o criado no sistema
-	if _, err := io.Copy(fileCsv, file); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if _, err := io.Copy(csv, file); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	fmt.Fprintf(w, "Arquivo enviado com sucesso!")
+	LerArquivo(filename)
 
-	arquivoCsv, err := os.Open(handler.Filename)
+}
+
+// Lendo arquivo, separando linhas e virgulas e adicionando a cada atributo da classe Transacao
+func LerArquivo(arquivo string) {
+	arquivoCsv, err := os.Open(arquivo)
 	if err != nil {
 		fmt.Println(err)
 		return
