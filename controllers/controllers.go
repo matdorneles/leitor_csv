@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"time"
+	"regexp"
 
 	"github.com/matdorneles/leitor_csv/database"
 	"github.com/matdorneles/leitor_csv/models"
@@ -59,6 +59,10 @@ func UploadArquivo(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Tamanho do arquivo: %+v\n", handler.Size)
 	fmt.Printf("Header: %+v\n", handler.Header)
 
+	if handler.Size <= 2 {
+		http.Error(w, "Arquivo está vazio", http.StatusBadRequest)
+	}
+
 	// Criando arquivo
 	csv, err := os.Create(filename)
 	if err != nil {
@@ -97,11 +101,16 @@ func LerArquivo(arquivo string) {
 		}
 
 		//verificando data da primeira linha
-		dtPrimeiraTransacao, err := time.Parse("2006-01-02T15:04:05", dadosCSV[0][7])
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		re := regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
+		fmt.Printf("Procurando pelo padrão: %v", re.String())
+
+		dtPrimeiraTransacao := re.FindString(dadosCSV[0][7])
+
+		// dtPrimeiraTransacao, err := time.Parse("2006-01-02T15:04:05", dadosCSV[0][7])
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	return
+		// }
 
 		//lendo linha por linha e guardando dados para o DB
 		for _, linha := range dadosCSV {
@@ -110,14 +119,20 @@ func LerArquivo(arquivo string) {
 				continue
 			}
 
-			dtTransacao, err := time.Parse("2006-01-02T15:04:05", linha[7])
-			if err != nil {
+			dtTransacao := re.FindString(linha[7])
+
+			if dtTransacao != dtPrimeiraTransacao {
 				continue
 			}
 
-			if dtTransacao.Day() != dtPrimeiraTransacao.Day() && dtTransacao.Month() != dtPrimeiraTransacao.Month() && dtTransacao.Year() != dtPrimeiraTransacao.Year() {
-				continue
-			}
+			// dtTransacao, err := time.Parse("2006-01-02T15:04:05", linha[7])
+			// if err != nil {
+			// 	continue
+			// }
+
+			// if dtTransacao.Day() != dtPrimeiraTransacao.Day() && dtTransacao.Month() != dtPrimeiraTransacao.Month() && dtTransacao.Year() != dtPrimeiraTransacao.Year() {
+			// 	continue
+			// }
 
 			transacoes = append(transacoes, models.Transacao{
 				BancoOrigem:       linha[0],
