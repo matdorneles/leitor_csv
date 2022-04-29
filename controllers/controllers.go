@@ -94,60 +94,59 @@ func LerArquivo(arquivo string) {
 	leitor := csv.NewReader(arquivoCsv)
 	var transacoes []models.Transacao
 
-	for {
-		dadosCSV, err := leitor.ReadAll()
-		if err != nil {
-			log.Fatal(err)
+	dadosCSV, err := leitor.ReadAll()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//verificando data da primeira linha
+	re := regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
+	fmt.Printf("Procurando pelo padrão: %v\n", re.String())
+
+	dtPrimeiraTransacao := re.FindString(dadosCSV[0][7])
+	fmt.Printf("A data encontrada foi: %v\n", dtPrimeiraTransacao)
+
+	// dtPrimeiraTransacao, err := time.Parse("2006-01-02T15:04:05", dadosCSV[0][7])
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+
+	//lendo linha por linha e guardando dados para o DB
+	for _, linha := range dadosCSV {
+
+		if contains(linha, "") {
+			continue
 		}
 
-		//verificando data da primeira linha
-		re := regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
-		fmt.Printf("Procurando pelo padrão: %v", re.String())
+		dtTransacao := re.FindString(linha[7])
 
-		dtPrimeiraTransacao := re.FindString(dadosCSV[0][7])
+		if dtTransacao != dtPrimeiraTransacao {
+			continue
+		}
 
-		// dtPrimeiraTransacao, err := time.Parse("2006-01-02T15:04:05", dadosCSV[0][7])
+		// dtTransacao, err := time.Parse("2006-01-02T15:04:05", linha[7])
 		// if err != nil {
-		// 	fmt.Println(err)
-		// 	return
+		// 	continue
 		// }
 
-		//lendo linha por linha e guardando dados para o DB
-		for _, linha := range dadosCSV {
+		// if dtTransacao.Day() != dtPrimeiraTransacao.Day() && dtTransacao.Month() != dtPrimeiraTransacao.Month() && dtTransacao.Year() != dtPrimeiraTransacao.Year() {
+		// 	continue
+		// }
 
-			if contains(linha, "") {
-				continue
-			}
-
-			dtTransacao := re.FindString(linha[7])
-
-			if dtTransacao != dtPrimeiraTransacao {
-				continue
-			}
-
-			// dtTransacao, err := time.Parse("2006-01-02T15:04:05", linha[7])
-			// if err != nil {
-			// 	continue
-			// }
-
-			// if dtTransacao.Day() != dtPrimeiraTransacao.Day() && dtTransacao.Month() != dtPrimeiraTransacao.Month() && dtTransacao.Year() != dtPrimeiraTransacao.Year() {
-			// 	continue
-			// }
-
-			transacoes = append(transacoes, models.Transacao{
-				BancoOrigem:       linha[0],
-				AgenciaOrigem:     linha[1],
-				ContaOrigem:       linha[2],
-				BancoDestino:      linha[3],
-				AgenciaDestino:    linha[4],
-				ContaDestino:      linha[5],
-				ValorTransacao:    linha[6],
-				DataHoraTransacao: dtTransacao,
-			})
-		}
-		transacaoJson, _ := json.Marshal(transacoes)
-		fmt.Println(string(transacaoJson))
-
-		database.DB.Create(&transacoes)
+		transacoes = append(transacoes, models.Transacao{
+			BancoOrigem:       linha[0],
+			AgenciaOrigem:     linha[1],
+			ContaOrigem:       linha[2],
+			BancoDestino:      linha[3],
+			AgenciaDestino:    linha[4],
+			ContaDestino:      linha[5],
+			ValorTransacao:    linha[6],
+			DataHoraTransacao: dtTransacao,
+		})
 	}
+	transacaoJson, _ := json.Marshal(transacoes)
+	fmt.Println(string(transacaoJson))
+
+	database.DB.Create(&transacoes)
 }
